@@ -1,2 +1,2 @@
 # tanque
-Juego arade Tanque, curso python de fin de semana.
+Juego arcade Tanque, curso python de fin de semana.
