@@ -67,4 +67,40 @@ self.text_winner = arcade.Text("GANADOR!", ...)
 
 # Bien (En on_draw):
 self.text_winner.draw()
+# Bien (En on_draw):
+self.text_winner.draw()
 ```
+
+## 5. Cargador de Niveles (`terrain.py`)
+
+Una de las características más potentes es la capacidad de diseñar niveles en texto plano.
+
+**map1.txt**:
+```text
+##########
+#...B....#
+#...#....#
+##########
+```
+
+El código lee este archivo línea por línea y carácter por carácter:
+
+```python
+# terrain.py
+def load_map(filename):
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    for row_idx, line in enumerate(lines):
+        for col_idx, char in enumerate(line):
+            # Calculamos posición X, Y según la fila y columna
+            x = col_idx * GRID_SIZE
+            y = SCREEN_HEIGHT - (row_idx * GRID_SIZE)
+            
+            if char == '#':
+                # Crear Muro Indestructible
+            elif char == 'B':
+                # Crear Muro Destructible
+```
+
+Esto nos permite crear **10 niveles** simplemente editando archivos de texto, sin tocar el código Python.

@@ -3,7 +3,7 @@ import math
 from constants import *
 from tank import Tank
 from bullet import Bullet
-from terrain import generate_terrain
+from terrain import load_map
 
 class MyGame(arcade.Window):
     def __init__(self):
@@ -15,10 +15,11 @@ class MyGame(arcade.Window):
         self.bullet_list = arcade.SpriteList()
         self.terrain_list = list() # Will be populated
         self.wall_list = arcade.SpriteList()
-
+        # Players
         self.player1 = None
         self.player2 = None
         self.winner = None
+        self.current_level = 1
 
         # UI Text Objects
         self.text_winner = None
@@ -31,11 +32,29 @@ class MyGame(arcade.Window):
             anchor_x="center",
         )
 
-    def setup(self):
+    def setup(self, level=None):
         """Set up the game variables and initialize sprites."""
+        if level:
+            self.current_level = level
+        
+        # Safe map loading
+        map_file = f"maps/map{self.current_level}.txt"
+        try:
+             # Basic check if file exists (Arcade might error or Terrain load might handle it)
+             # terrain.load_map handles file not found by printing error and returning empty list
+             pass
+        except:
+             pass
+
         self.all_sprites = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
-        self.wall_list = generate_terrain(20)
+        self.wall_list = load_map(map_file)
+        # Fallback if map fails loading (e.g. if we go beyond 10 and file doesn't exist, though we have 10)
+        if not self.wall_list and self.current_level > 1:
+             print(f"Map {self.current_level} not found. Resetting to 1.")
+             self.current_level = 1
+             self.wall_list = load_map("maps/map1.txt")
+
         self.winner = None
         self.text_winner = None
 
@@ -105,9 +124,14 @@ class MyGame(arcade.Window):
         self.wall_list.draw()
         self.all_sprites.draw()
         self.bullet_list.draw()
+        
+        # Draw Health Bars
+        self.player1.draw_health_bar()
+        self.player2.draw_health_bar()
 
         if self.winner and self.text_winner:
             self.text_winner.draw()
+            self.text_restart.text = f"Nivel {self.current_level} Completado. Presione ESPACIO para Nivel {self.current_level + 1}"
             self.text_restart.draw()
 
     def on_update(self, delta_time):
@@ -142,13 +166,17 @@ class MyGame(arcade.Window):
             
             # Bullet vs Tanks
             if arcade.check_for_collision(bullet, self.player1):
-                self.end_game(COLOR_TANK_2)
+                self.player1.hp -= 1
                 self.play_sound(self.sound_hit)
                 bullet.kill()
+                if self.player1.hp <= 0:
+                    self.end_game(COLOR_TANK_2)
             elif arcade.check_for_collision(bullet, self.player2):
-                self.end_game(COLOR_TANK_1)
+                self.player2.hp -= 1
                 self.play_sound(self.sound_hit)
                 bullet.kill()
+                if self.player2.hp <= 0:
+                     self.end_game(COLOR_TANK_1)
 
     def on_key_press(self, key, modifiers):
         # Exit Game
@@ -156,9 +184,9 @@ class MyGame(arcade.Window):
             self.close()
             return
         
-        # Restart
+        # Restart / Next Level
         if self.winner and key == KEY_RESTART:
-            self.setup()
+            self.setup(self.current_level + 1)
             return
 
         # Player 1 Controls

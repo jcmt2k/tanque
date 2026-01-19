@@ -8,92 +8,57 @@ class Block(arcade.Sprite):
         super().__init__(filename, scale)
         self.destructible = destructible
 
-def generate_terrain(count=20):
+def load_map(filename):
     """
-    Generates a symmetrical map with destructible and indestructible blocks.
-    The count parameter is used as a density factor.
+    Loads a map from a text file.
+    Legend:
+    # : Indestructible Wall (Grass/Steel visual)
+    B : Destructible Wall (Dirt/Brick visual)
+    . : Empty Space
     """
     terrain_list = arcade.SpriteList()
+    GRID_SIZE = 40 
     
-    # Grid Settings
-    GRID_SIZE = 40 # Assuming blocks are roughly 80px * 0.5
-    cols = int(SCREEN_WIDTH // GRID_SIZE)
-    rows = int(SCREEN_HEIGHT // GRID_SIZE)
-    
-    # Generate Quadrant 1 (Top-Left)
-    quad_cols = cols // 2
-    quad_rows = rows // 2
-    
-    # Track occupied positions to avoid overlaps
-    occupied = set()
+    try:
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"Error: Map file '{filename}' not found.")
+        return terrain_list
 
-    # Always add border walls
-    for c in range(cols):
-        # Top and Bottom
-        for r in [0, rows - 1]:
-            pos = (c, r)
-            if pos not in occupied:
-                block = Block(f"{ASSET_PATH}tileGrass.png", 0.5, destructible=False)
-                block.center_x = c * GRID_SIZE + GRID_SIZE / 2
-                block.center_y = r * GRID_SIZE + GRID_SIZE / 2
-                terrain_list.append(block)
-                occupied.add(pos)
-                
-    for r in range(1, rows - 1):
-        # Left and Right
-        for c in [0, cols - 1]:
-            pos = (c, r)
-            if pos not in occupied:
-                block = Block(f"{ASSET_PATH}tileGrass.png", 0.5, destructible=False)
-                block.center_x = c * GRID_SIZE + GRID_SIZE / 2
-                block.center_y = r * GRID_SIZE + GRID_SIZE / 2
-                terrain_list.append(block)
-                occupied.add(pos)
-
-    # Random Obstacles in Quadrant 1
-    # We use 'count' to determine how many obstacles to try and place in the quadrant
-    # Then we mirror them.
+    # Calculate offset to center the map if it's smaller, or just start from 0,0
+    # Assuming map is designed for 800x600 (20x15 blocks of 40px)
     
-    attempts = count * 2 
-    for _ in range(attempts):
-        c = random.randint(2, quad_cols - 1)
-        r = random.randint(2, quad_rows - 1)
+    # Iterate rows (top to bottom in file)
+    # But coordinate 0 is bottom. So we read file line 0 -> Max Y
+    # Actually, let's reverse the lines so line 0 of file is at the top of screen.
+    
+    total_rows = len(lines)
+    
+    for row_idx, line in enumerate(lines):
+        # We want the first line of the file to be at the TOP of the screen
+        # y = SCREEN_HEIGHT - (row_idx * GRID_SIZE) - GRID_SIZE/2
         
-        # Determine type (30% Indestructible, 70% Destructible)
-        if random.random() < 0.3:
-            # Indestructible (Steel/Grass)
-            filename = f"{ASSET_PATH}tileGrass.png"
-            destructible = False
-        else:
-            # Destructible (Dirt)
-            filename = f"{ASSET_PATH}tileDirt.png"
-            destructible = True
+        # Or using standard grid coordinates:
+        # r = (total_rows - 1) - row_idx
+        
+        line = line.strip()
+        for col_idx, char in enumerate(line):
+            x = col_idx * GRID_SIZE + GRID_SIZE / 2
+            # Top-down positioning
+            y = SCREEN_HEIGHT - (row_idx * GRID_SIZE) - GRID_SIZE / 2
             
-        # Add to all 4 quadrants (Mirroring)
-        # Q1: (c, r)
-        # Q2: (cols - 1 - c, r)
-        # Q3: (c, rows - 1 - r)
-        # Q4: (cols - 1 - c, rows - 1 - r)
-        
-        positions = [
-            (c, r),
-            (cols - 1 - c, r),
-            (c, rows - 1 - r),
-            (cols - 1 - c, rows - 1 - r)
-        ]
-        
-        for pos_c, pos_r in positions:
-            if (pos_c, pos_r) not in occupied:
-                # Don't block the very center spawn areas (approximated)
-                # Player 1 starts at ~100, 300 (col ~2, row ~7)
-                # Player 2 starts at ~700, 300 (col ~17, row ~7)
-                # We can add a simple check if needed, but random luck usually works.
-                # Let's enforce a safe zone around spawns if we want, but let's keep it simple.
-                
-                block = Block(filename, 0.5, destructible=destructible)
-                block.center_x = pos_c * GRID_SIZE + GRID_SIZE / 2
-                block.center_y = pos_r * GRID_SIZE + GRID_SIZE / 2
+            block = None
+            if char == '#':
+                # Indestructible
+                block = Block(f"{ASSET_PATH}tileGrass.png", 0.5, destructible=False)
+            elif char == 'B':
+                # Destructible
+                block = Block(f"{ASSET_PATH}tileDirt.png", 0.5, destructible=True)
+            
+            if block:
+                block.center_x = x
+                block.center_y = y
                 terrain_list.append(block)
-                occupied.add((pos_c, pos_r))
-
+                
     return terrain_list

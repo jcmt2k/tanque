@@ -6,6 +6,8 @@ from bullet import Bullet
 class Tank(arcade.Sprite):
     def __init__(self, color, scale):
         self.my_color = color
+        self.hp = TANK_STARTING_HP
+        self.max_hp = TANK_STARTING_HP
         image_name = f"tank_{self.my_color}.png"
         super().__init__(f"{ASSET_PATH}{image_name}", scale)
         
@@ -13,6 +15,22 @@ class Tank(arcade.Sprite):
         self.angle_speed = 0
         self.speed = 0
         self.fire_cooldown = 0
+        
+        # Ammo
+        self.ammo = MAX_AMMO
+        self.max_ammo = MAX_AMMO
+        self.is_reloading = False
+        self.reload_timer = 0
+        
+        # Pre-create reloading text to avoid PerformanceWarning
+        self.text_reloading = arcade.Text(
+            "RECARGANDO...",
+            0, 0, # Position updated in draw
+            arcade.color.WHITE,
+            font_size=10,
+            anchor_x="center"
+        )
+        
         self.bullet_offset = BULLET_OFFSET  # Distance from center to spawn bullet
 
     def update(self, delta_time: float = 1/60):
@@ -41,10 +59,23 @@ class Tank(arcade.Sprite):
         # Cooldown management
         if self.fire_cooldown > 0:
             self.fire_cooldown -= 1
+            
+        # Reload management
+        if self.is_reloading:
+            self.reload_timer -= delta_time
+            if self.reload_timer <= 0:
+                self.ammo = self.max_ammo
+                self.is_reloading = False
+                self.reload_timer = 0
 
     def fire(self):
         """Attempts to fire a bullet. Returns Bullet instance or None."""
-        if self.fire_cooldown == 0:
+        if self.fire_cooldown == 0 and not self.is_reloading and self.ammo > 0:
+            self.ammo -= 1
+            if self.ammo <= 0:
+                self.is_reloading = True
+                self.reload_timer = RELOAD_TIME
+                
             # Fire from the "Back" (which appears to be the visual Front)
             #bullet_angle = self.angle + 180 
             bullet_angle = self.angle 
@@ -59,3 +90,46 @@ class Tank(arcade.Sprite):
             self.fire_cooldown = FIRE_RATE
             return bullet
         return None
+        
+    def draw_health_bar(self):
+        """Draws a simple health bar above the tank."""
+        if self.hp < self.max_hp:
+            # Draw background (Red)
+            # Using lrbt per modern Arcade requirements (Left, Right, Bottom, Top)
+            arcade.draw_lrbt_rectangle_filled(
+                self.center_x - HEALTH_BAR_WIDTH / 2,
+                self.center_x + HEALTH_BAR_WIDTH / 2,
+                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2,
+                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2,
+                arcade.color.RED
+            )
+            
+            # Draw current health (Green)
+            health_width = HEALTH_BAR_WIDTH * (self.hp / self.max_hp)
+            # Calculate left position based on centered bar
+            bar_left = self.center_x - HEALTH_BAR_WIDTH / 2
+            
+            arcade.draw_lrbt_rectangle_filled(
+                bar_left,
+                bar_left + health_width,
+                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2,
+                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2,
+                arcade.color.GREEN
+            )
+            
+        # Draw Ammo (Yellow dots below health)
+        start_x = self.center_x - 20
+        for i in range(self.max_ammo):
+            color = arcade.color.YELLOW if i < self.ammo else arcade.color.GRAY
+            arcade.draw_circle_filled(
+                start_x + i * 10,
+                self.center_y + 30,
+                3,
+                color
+            )
+        
+        # Draw Reloading Text
+        if self.is_reloading:
+            self.text_reloading.x = self.center_x
+            self.text_reloading.y = self.center_y + 50
+            self.text_reloading.draw()

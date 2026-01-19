@@ -9,11 +9,13 @@ Este proyecto sirve como base práctica para el **Curso de Python para Desarroll
 
 ## 🚀 Características
 
-- **Multijugador Local 1v1**: Juega contra un amigo en el mismo teclado.
-- **Física Arcade**: Mecánicas de movimiento vectorial y rebote de balas.
-- **Entornos Destruibles**: Rompe muros estratégicamente para alcanzar a tu oponente.
-- **Efectos de Sonido**: Audio inmersivo para disparos, impactos y fin de juego.
-- **Optimizado**: Renderizado de texto eficiente y gestión de sprites.
+*   **Multijugador Local 1v1**: Juega contra un amigo en el mismo teclado.
+*   **Sistema de Vida y Munición**: Tanques con 3 vidas y cargadores limitados (5 disparos).
+*   **Progresión de Niveles**: 10 mapas de dificultad creciente.
+*   **Física Arcade**: Mecánicas de movimiento vectorial y rebote de balas.
+*   **Entornos Destruibles**: Rompe muros estratégicamente para alcanzar a tu oponente.
+*   **Efectos de Sonido**: Audio inmersivo para disparos, impactos y fin de juego.
+*   **Optimizado**: Renderizado de texto eficiente y gestión de sprites.
 
 ## 📚 Documentación del Curso
 

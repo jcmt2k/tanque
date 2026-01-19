@@ -7,9 +7,12 @@ En este curso construiremos (y analizaremos) un juego de combate de tanques para
 ### Características del Juego
 
 - **Multijugador Local:** Dos personas juegan en el mismo teclado.
-- **Física de Balas:** Las balas rebotan en las paredes.
-- **Terreno Destruible:** Algunos obstáculos pueden ser destruidos con disparos.
-- **Sonido:** Efectos de disparos, explosiones y música de fondo.
+- **Sistema de Combate Táctico:**
+    - **Vida:** Los tanques resisten 3 impactos antes de explotar.
+    - **Munición:** Cargador de 5 balas. ¡Gestiona tus disparos mientras recargas!
+- **Física de Balas:** Las balas rebotan, creando situaciones de riesgo.
+- **Mapas Dinámicos:** 10 niveles que cargan desde archivos de texto.
+- **Sonido:** Efectos inmersivos y música de fondo.
 
 ## Objetivos de Aprendizaje 🧠
 
@@ -28,9 +31,13 @@ Usando este juego como ejemplo, exploraremos conceptos clave de la programación
     - Uso de **Trigonometría** (Seno y Coseno) para calcular vectores de movimiento basados en un ángulo.
     - Sistema de coordenadas cartesiano.
 
-4.  **Lógica de Colisiones:**
-    - Detección de impacto entre objetos.
-    - Reacción a colisiones (rebotar, destruir, detenerse).
+4.  **Lógica de Colisiones y Estado:**
+    - Detección de impacto (Bala vs Tanque, Bala vs Muro).
+    - Gestión de estado: Vida (`hp`), Munición (`ammo`) y Recarga.
+
+5.  **Carga de Datos (I/O):**
+    - Leer archivos de texto para generar mapas (`load_map`).
+    - Parsear caracteres (`#`, `B`, `.`) para crear el mundo.
 
 ## Tecnologías
 
