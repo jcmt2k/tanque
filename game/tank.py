@@ -22,7 +22,6 @@ class Tank(arcade.Sprite):
         self.is_reloading = False
         self.reload_timer = 0
         
-        # Pre-create reloading text to avoid PerformanceWarning
         self.text_reloading = arcade.Text(
             "RECARGANDO...",
             0, 0, # Position updated in draw
@@ -32,6 +31,14 @@ class Tank(arcade.Sprite):
         )
         
         self.bullet_offset = BULLET_OFFSET  # Distance from center to spawn bullet
+
+        # Power-ups
+        self.is_shielded = False
+        self.shield_timer = 0
+        self.speed_boost_timer = 0
+        self.triple_shot_timer = 0
+        self.base_speed = TANK_SPEED # Store constant
+        self.current_max_speed = TANK_SPEED
 
     def update(self, delta_time: float = 1/60):
         # Rotate
@@ -68,6 +75,31 @@ class Tank(arcade.Sprite):
                 self.is_reloading = False
                 self.reload_timer = 0
 
+        # Power-up Timers
+        if self.is_shielded:
+            self.shield_timer -= delta_time
+            if self.shield_timer <= 0:
+                self.is_shielded = False
+        
+        if self.speed_boost_timer > 0:
+            self.speed_boost_timer -= delta_time
+            if self.speed_boost_timer <= 0:
+                self.current_max_speed = self.base_speed
+        
+        if self.triple_shot_timer > 0:
+            self.triple_shot_timer -= delta_time
+
+    def apply_powerup(self, p_type):
+        """Applies a powerup effect."""
+        if p_type == POWERUP_TYPE_SHIELD:
+            self.is_shielded = True
+            self.shield_timer = POWERUP_DURATION
+        elif p_type == POWERUP_TYPE_SPEED:
+            self.speed_boost_timer = POWERUP_DURATION
+            self.current_max_speed = self.base_speed * 1.5
+        elif p_type == POWERUP_TYPE_TRIPLE:
+            self.triple_shot_timer = POWERUP_DURATION
+
     def fire(self):
         """Attempts to fire a bullet. Returns Bullet instance or None."""
         if self.fire_cooldown == 0 and not self.is_reloading and self.ammo > 0:
@@ -78,17 +110,24 @@ class Tank(arcade.Sprite):
                 
             # Fire from the "Back" (which appears to be the visual Front)
             #bullet_angle = self.angle + 180 
-            bullet_angle = self.angle 
-            bullet = Bullet(self.bullet_name, BULLET_SCALE, bullet_angle)
+            base_angle = self.angle 
             
-            # Spawn bullet at the cannon tip (inverted direction)
-            # Increased offset to 60 to ensure it clears the tank body
-            # offset vector based on new bullet angle
-            offset = BULLET_OFFSET
-            bullet.center_x = self.center_x + math.sin(math.radians(bullet_angle)) * offset
-            bullet.center_y = self.center_y + math.cos(math.radians(bullet_angle)) * offset 
+            bullets_to_spawn = []
+            
+            angles = [base_angle]
+            if self.triple_shot_timer > 0:
+                angles = [base_angle - 15, base_angle, base_angle + 15]
+            
+            for ang in angles:
+                bullet = Bullet(self.bullet_name, BULLET_SCALE, ang)
+                offset = self.bullet_offset # Use instance var
+                bullet.center_x = self.center_x + math.sin(math.radians(ang)) * offset
+                bullet.center_y = self.center_y + math.cos(math.radians(ang)) * offset 
+                bullets_to_spawn.append(bullet)
+
             self.fire_cooldown = FIRE_RATE
-            return bullet
+            return bullets_to_spawn
+        return []
         return None
         
     def draw_health_bar(self):
@@ -99,8 +138,8 @@ class Tank(arcade.Sprite):
             arcade.draw_lrbt_rectangle_filled(
                 self.center_x - HEALTH_BAR_WIDTH / 2,
                 self.center_x + HEALTH_BAR_WIDTH / 2,
-                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2,
-                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2,
+                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2, # Bottom
+                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2, # Top
                 arcade.color.RED
             )
             
@@ -112,10 +151,13 @@ class Tank(arcade.Sprite):
             arcade.draw_lrbt_rectangle_filled(
                 bar_left,
                 bar_left + health_width,
-                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2,
-                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2,
+                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2, # Bottom
+                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2, # Top
                 arcade.color.GREEN
             )
+            
+        if self.is_shielded:
+             arcade.draw_circle_outline(self.center_x, self.center_y, 30, arcade.color.CYAN, 2)
             
         # Draw Ammo (Yellow dots below health)
         start_x = self.center_x - 20

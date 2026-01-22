@@ -8,15 +8,19 @@ class Block(arcade.Sprite):
         super().__init__(filename, scale)
         self.destructible = destructible
 
+from shelter import Shelter
+
 def load_map(filename):
     """
     Loads a map from a text file.
     Legend:
     # : Indestructible Wall (Grass/Steel visual)
     B : Destructible Wall (Dirt/Brick visual)
+    S : Shelter (Protects from Acid Rain)
     . : Empty Space
     """
     terrain_list = arcade.SpriteList()
+    shelter_list = arcade.SpriteList()
     GRID_SIZE = 40 
     
     try:
@@ -24,7 +28,7 @@ def load_map(filename):
             lines = f.readlines()
     except FileNotFoundError:
         print(f"Error: Map file '{filename}' not found.")
-        return terrain_list
+        return terrain_list, shelter_list
 
     # Calculate offset to center the map if it's smaller, or just start from 0,0
     # Assuming map is designed for 800x600 (20x15 blocks of 40px)
@@ -52,13 +56,18 @@ def load_map(filename):
             if char == '#':
                 # Indestructible
                 block = Block(f"{ASSET_PATH}tileGrass.png", 0.5, destructible=False)
-            elif char == 'B':
-                # Destructible
-                block = Block(f"{ASSET_PATH}tileDirt.png", 0.5, destructible=True)
-            
-            if block:
                 block.center_x = x
                 block.center_y = y
                 terrain_list.append(block)
+            elif char == 'B':
+                # Destructible
+                block = Block(f"{ASSET_PATH}tileDirt.png", 0.5, destructible=True)
+                block.center_x = x
+                block.center_y = y
+                terrain_list.append(block)
+            elif char == 'S':
+                # Shelter
+                s = Shelter(x, y)
+                shelter_list.append(s)
                 
-    return terrain_list
+    return terrain_list, shelter_list
