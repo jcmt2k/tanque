@@ -140,3 +140,8 @@
     3.  Collect it -> Verify rain starts.
     4.  Stand in open -> Take damage (observe health bar drop).
     5.  Move under a grey/transparent Roof (Shelter) -> Verify safety.
+
+## Bug Fixes
+- **Acid Drop Update Crash**: Fixed `TypeError` by updating `AcidDrop.update` signature to accept `delta_time`.
+- **Invalid Color Crash**: Replaced invalid `ACID_GREEN` constant with `arcade.color.LIME` and then `arcade.color.EMERALD` for better visibility.
+- **Health Bar Crash**: Fixed `ValueError` when health dropped below 0 (due to floating point acid damage) by clamping displayed health width to 0.
