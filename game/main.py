@@ -379,6 +379,7 @@ class MyGame(arcade.Window):
                         tank.hp -= ACID_DAMAGE
                         # Visual: Fizzle?
                         self.create_explosion(tank.center_x, tank.center_y, arcade.color.LIME, 5)
+                        self.play_sound(self.sound_hit)
                         if tank.hp <= 0:
                              winner = COLOR_TANK_2 if tank == self.player1 else COLOR_TANK_1
                              self.end_game(winner)

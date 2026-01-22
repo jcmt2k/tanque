@@ -27,7 +27,7 @@ class PowerUp(arcade.Sprite):
             self.color = arcade.color.RED
             self.texture_name = "triple"
         elif self.type == POWERUP_TYPE_ACID:
-            self.color = arcade.color.LIME
+            self.color = arcade.color.EMERALD
             self.texture_name = "acid"
             
     def draw(self, **kwargs):

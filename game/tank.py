@@ -144,7 +144,7 @@ class Tank(arcade.Sprite):
             )
             
             # Draw current health (Green)
-            health_width = HEALTH_BAR_WIDTH * (self.hp / self.max_hp)
+            health_width = HEALTH_BAR_WIDTH * (max(0, self.hp) / self.max_hp)
             # Calculate left position based on centered bar
             bar_left = self.center_x - HEALTH_BAR_WIDTH / 2
             
