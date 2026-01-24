@@ -60,6 +60,19 @@ def generate_map(difficulty):
                  if (r % 2 == 0 and c % 2 == 0) or random.random() < density:
                     grid[r][c] = '#' if random.random() < steel_prob else 'B'
 
+    # Add Shelters (Acid Rain protection)
+    # Ensure at least 3-5 shelters per map
+    num_shelters = random.randint(3, 6)
+    shelters_placed = 0
+    attempts = 0
+    while shelters_placed < num_shelters and attempts < 100:
+        r = random.randint(2, ROWS-3)
+        c = random.randint(2, COLS-3)
+        if grid[r][c] == '.':
+            grid[r][c] = 'S'
+            shelters_placed += 1
+        attempts += 1
+
     # Clear spawn zones (Top-Left and Bottom-Right approx)
     # Player 1: ~ (2, 7) - wait, Arcade coords logic.
     # Let's just clear a 3x3 area around likely spawn points visually
@@ -85,6 +98,6 @@ def save_map(grid, map_num):
     print(f"Generated {filename}")
 
 if __name__ == "__main__":
-    for i in range(1, 11):
+    for i in range(1, 21):
         grid = generate_map(i)
         save_map(grid, i)

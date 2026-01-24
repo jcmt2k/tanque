@@ -52,7 +52,7 @@ KEY_P1_UP = arcade.key.W
 KEY_P1_DOWN = arcade.key.S
 KEY_P1_LEFT = arcade.key.A
 KEY_P1_RIGHT = arcade.key.D
-KEY_P1_FIRE = arcade.key.R
+KEY_P1_FIRE = arcade.key.T
 
 # Player 2
 KEY_P2_UP = arcade.key.UP

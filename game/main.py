@@ -105,6 +105,30 @@ class MyGame(arcade.Window):
             anchor_x="center"
         )
         
+        # Sidebar Text Objects
+        # Level
+        self.text_level_left = arcade.Text(f"NIVEL {self.current_level}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 30, arcade.color.GOLD, 16, anchor_x="center", bold=True)
+        self.text_level_right = arcade.Text(f"NIVEL {self.current_level}", GAME_RIGHT_X + SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 30, arcade.color.GOLD, 16, anchor_x="center", bold=True)
+        
+        # Player 1 Static
+        self.text_p1_name = arcade.Text("JUGADOR 1", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 60, arcade.color.WHITE, 14, anchor_x="center", bold=True)
+        # Player 1 Dynamic
+        self.text_p1_score = arcade.Text("", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p1_hp = arcade.Text("", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p1_ammo = arcade.Text("", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+        self.text_p1_status_label = arcade.Text("Estado:", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p1_status_val = arcade.Text("Normal", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
+
+        # Player 2 Static
+        center_r = GAME_RIGHT_X + SIDEBAR_WIDTH / 2
+        self.text_p2_name = arcade.Text("JUGADOR 2", center_r, SCREEN_HEIGHT - 60, arcade.color.WHITE, 14, anchor_x="center", bold=True)
+        # Player 2 Dynamic
+        self.text_p2_score = arcade.Text("", center_r, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p2_hp = arcade.Text("", center_r, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p2_ammo = arcade.Text("", center_r, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+        self.text_p2_status_label = arcade.Text("Estado:", center_r, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
+        self.text_p2_status_val = arcade.Text("Normal", center_r, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
+
         # Pause text
         self.text_pause = arcade.Text(
             "PAUSA",
@@ -276,19 +300,30 @@ class MyGame(arcade.Window):
         # Draw Sidebars
         # Left Sidebar (Player 1)
         arcade.draw_lrbt_rectangle_filled(0, GAME_LEFT_X, 0, SCREEN_HEIGHT, arcade.color.DARK_SLATE_BLUE)
-        arcade.draw_text("JUGADOR 1", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 50, arcade.color.WHITE, 14, anchor_x="center", bold=True)
-        arcade.draw_text(f"Puntos: {self.score_p1}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
+        
+        # Update and Draw Text
+        self.text_level_left.text = f"NIVEL {self.current_level}"
+        self.text_level_left.draw()
+        
+        self.text_p1_name.draw()
+        
+        self.text_p1_score.text = f"Puntos: {self.score_p1}"
+        self.text_p1_score.draw()
         
         # P1 Health (Text + Bar)
         if self.player1:
              hp_pct = max(0, self.player1.hp / self.player1.max_hp)
-             arcade.draw_text(f"HP: {int(self.player1.hp)}/{self.player1.max_hp}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
-             # Draw sidebar health bar
+             
+             self.text_p1_hp.text = f"HP: {int(self.player1.hp)}/{self.player1.max_hp}"
+             self.text_p1_hp.draw()
+             
+             # Draw sidebar health bar (Geometry is fast)
              arcade.draw_lrbt_rectangle_filled(20, SIDEBAR_WIDTH - 20, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.RED)
              arcade.draw_lrbt_rectangle_filled(20, 20 + (SIDEBAR_WIDTH - 40) * hp_pct, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.GREEN)
              
              # P1 Amenities
-             arcade.draw_text(f"Balas: {self.player1.ammo}/{self.player1.max_ammo}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+             self.text_p1_ammo.text = f"Balas: {self.player1.ammo}/{self.player1.max_ammo}"
+             self.text_p1_ammo.draw()
              
              # Active Powerup
              status = "Normal"
@@ -296,26 +331,36 @@ class MyGame(arcade.Window):
              elif self.player1.rapid_fire_timer > 0: status = "RAPID FIRE"
              elif self.player1.triple_shot_timer > 0: status = "TRIPLE"
              
-             arcade.draw_text(f"Estado:", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
-             arcade.draw_text(f"{status}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
+             self.text_p1_status_label.draw()
+             self.text_p1_status_val.text = status
+             self.text_p1_status_val.draw()
 
 
         # Right Sidebar (Player 2)
         arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X, SCREEN_WIDTH, 0, SCREEN_HEIGHT, arcade.color.DARK_RED)
-        center_r = GAME_RIGHT_X + SIDEBAR_WIDTH / 2
-        arcade.draw_text("JUGADOR 2", center_r, SCREEN_HEIGHT - 50, arcade.color.WHITE, 14, anchor_x="center", bold=True)
-        arcade.draw_text(f"Puntos: {self.score_p2}", center_r, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
+        
+        self.text_level_right.text = f"NIVEL {self.current_level}"
+        self.text_level_right.draw()
+        
+        self.text_p2_name.draw()
+        
+        self.text_p2_score.text = f"Puntos: {self.score_p2}"
+        self.text_p2_score.draw()
         
         # P2 Health
         if self.player2:
              hp_pct = max(0, self.player2.hp / self.player2.max_hp)
-             arcade.draw_text(f"HP: {int(self.player2.hp)}/{self.player2.max_hp}", center_r, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
+             
+             self.text_p2_hp.text = f"HP: {int(self.player2.hp)}/{self.player2.max_hp}"
+             self.text_p2_hp.draw()
+             
              # Draw sidebar health bar
              arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X + 20, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.RED)
              arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X + 20, GAME_RIGHT_X + 20 + (SIDEBAR_WIDTH - 40) * hp_pct, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.GREEN)
 
              # P2 Amenities
-             arcade.draw_text(f"Balas: {self.player2.ammo}/{self.player2.max_ammo}", center_r, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+             self.text_p2_ammo.text = f"Balas: {self.player2.ammo}/{self.player2.max_ammo}"
+             self.text_p2_ammo.draw()
 
              # Active Powerup
              status = "Normal"
@@ -323,8 +368,9 @@ class MyGame(arcade.Window):
              elif self.player2.rapid_fire_timer > 0: status = "RAPID FIRE"
              elif self.player2.triple_shot_timer > 0: status = "TRIPLE"
              
-             arcade.draw_text(f"Estado:", center_r, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
-             arcade.draw_text(f"{status}", center_r, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
+             self.text_p2_status_label.draw()
+             self.text_p2_status_val.text = status
+             self.text_p2_status_val.draw()
 
         if self.winner and self.text_winner:
             self.text_winner.draw()

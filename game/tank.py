@@ -3,6 +3,8 @@ import math
 from constants import *
 from bullet import Bullet
 
+import time
+
 class Tank(arcade.Sprite):
     def __init__(self, color, scale):
         self.my_color = color
@@ -28,6 +30,15 @@ class Tank(arcade.Sprite):
             arcade.color.WHITE,
             font_size=10,
             anchor_x="center"
+        )
+        
+        self.text_health_warning = arcade.Text(
+            "PELIGRO!",
+            0, 0,
+            arcade.color.RED,
+            font_size=12,
+            anchor_x="center",
+            bold=True
         )
         
         self.bullet_offset = BULLET_OFFSET  # Distance from center to spawn bullet
@@ -146,6 +157,16 @@ class Tank(arcade.Sprite):
         if self.is_shielded:
              arcade.draw_circle_outline(self.center_x, self.center_y, 30, arcade.color.BLUE, 2)
             
+        # Low Health Warning
+        if self.hp <= 1:
+             # Flash effect based on time or random for simplicity without adding new timer
+             if (int(time.time() * 4) % 2) == 0:
+                 self.text_health_warning.x = self.center_x
+                 self.text_health_warning.y = self.center_y + 40
+                 self.text_health_warning.draw()
+                 
+                 arcade.draw_circle_outline(self.center_x, self.center_y, 25, arcade.color.RED, 2)
+
         # Discrete Ammo (Small dots below tank)
         start_x = self.center_x - 15
         
