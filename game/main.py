@@ -69,6 +69,8 @@ class MyGame(arcade.Window):
             multiline=True
         )
         
+        self.is_cpu_mode = False
+        
         self.text_title = arcade.Text(
             "TANK BATTLE",
             SCREEN_WIDTH / 2,
@@ -79,7 +81,7 @@ class MyGame(arcade.Window):
             bold=True
         )
         self.text_instruction = arcade.Text(
-            "Presione ENTER para Comenzar",
+            "1: 1 Jugador (vs CPU)   |   2: 2 Jugadores",
             SCREEN_WIDTH / 2,
             SCREEN_HEIGHT / 2 - 20,
             arcade.color.DARK_BLUE,
@@ -138,6 +140,29 @@ class MyGame(arcade.Window):
             font_size=50,
             anchor_x="center",
             anchor_y="center"
+        )
+        
+        # Controls Info
+        self.text_p1_controls = arcade.Text(
+            "CONTROLES:\nW, A, S, D\nDisparo: T",
+            SIDEBAR_WIDTH / 2,
+            50,
+            arcade.color.LIGHT_GRAY,
+            10,
+            anchor_x="center",
+            multiline=True,
+            width=SIDEBAR_WIDTH
+        )
+        
+        self.text_p2_controls = arcade.Text(
+            "CONTROLES:\nFlechas\nDisparo: Enter",
+            center_r,
+            50,
+            arcade.color.LIGHT_GRAY,
+            10,
+            anchor_x="center",
+            multiline=True,
+            width=SIDEBAR_WIDTH
         )
 
     def setup(self, level=None):
@@ -371,6 +396,9 @@ class MyGame(arcade.Window):
              self.text_p2_status_label.draw()
              self.text_p2_status_val.text = status
              self.text_p2_status_val.draw()
+             
+        self.text_p1_controls.draw()
+        self.text_p2_controls.draw()
 
         if self.winner and self.text_winner:
             self.text_winner.draw()
@@ -390,6 +418,14 @@ class MyGame(arcade.Window):
         self.bullet_list.update(delta_time)
         self.powerup_list.update()
         self.particle_list.update()
+        
+        # AI Control for Player 2
+        if self.is_cpu_mode and self.player2 and self.player1 and self.player1.hp > 0:
+            ai_bullets = self.player2.update_ai(self.player1, self.wall_list, delta_time)
+            if ai_bullets:
+                for b in ai_bullets:
+                    self.bullet_list.append(b)
+                self.play_sound(self.sound_shoot)
         
         # Screen Shake Decay
         if self.shake_amount > 0:
@@ -534,7 +570,12 @@ class MyGame(arcade.Window):
             return
 
         if self.state == STATE_MENU:
-            if key == arcade.key.ENTER:
+            if key == arcade.key.ENTER or key == arcade.key.KEY_2:
+                self.is_cpu_mode = False
+                self.setup(1)
+                self.state = STATE_GAME
+            elif key == arcade.key.KEY_1:
+                self.is_cpu_mode = True
                 self.setup(1)
                 self.state = STATE_GAME
             return
@@ -575,20 +616,21 @@ class MyGame(arcade.Window):
                     self.play_sound(self.sound_shoot)
     
             # Player 2 Controls
-            if key == KEY_P2_UP:
-                self.player2.speed = TANK_SPEED # Inverted input
-            elif key == KEY_P2_DOWN:
-                self.player2.speed = -TANK_SPEED # Inverted input
-            elif key == KEY_P2_LEFT:
-                self.player2.angle_speed = TANK_TURN_SPEED # Left
-            elif key == KEY_P2_RIGHT:
-                self.player2.angle_speed = -TANK_TURN_SPEED # Right
-            elif key == KEY_P2_FIRE:
-                bullets = self.player2.fire()
-                if bullets: 
-                    for b in bullets:
-                        self.bullet_list.append(b)
-                    self.play_sound(self.sound_shoot)
+            if not self.is_cpu_mode:
+                if key == KEY_P2_UP:
+                    self.player2.speed = TANK_SPEED # Inverted input
+                elif key == KEY_P2_DOWN:
+                    self.player2.speed = -TANK_SPEED # Inverted input
+                elif key == KEY_P2_LEFT:
+                    self.player2.angle_speed = TANK_TURN_SPEED # Left
+                elif key == KEY_P2_RIGHT:
+                    self.player2.angle_speed = -TANK_TURN_SPEED # Right
+                elif key == KEY_P2_FIRE:
+                    bullets = self.player2.fire()
+                    if bullets: 
+                        for b in bullets:
+                            self.bullet_list.append(b)
+                        self.play_sound(self.sound_shoot)
 
     def on_key_release(self, key, modifiers):
         if self.state != STATE_GAME:

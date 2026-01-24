@@ -197,8 +197,79 @@ class Tank(arcade.Sprite):
                 )
              
         
-        # Draw Reloading Text
         if self.is_reloading:
             self.text_reloading.x = self.center_x
             self.text_reloading.y = self.center_y + 50
             self.text_reloading.draw()
+
+    def update_ai(self, target, walls, delta_time):
+        """Simple AI to control the tank."""
+        if not target:
+            self.speed = 0
+            self.angle_speed = 0
+            return []
+
+        # 1. Targeting
+        dx = target.center_x - self.center_x
+        dy = target.center_y - self.center_y
+        dist = math.sqrt(dx*dx + dy*dy)
+        
+        target_angle = math.degrees(math.atan2(dx, dy)) # Note: atan2(x, y) for 0=North
+        # Arcade angle 0 is East? No, Tank sprite usually 0 is Up/North if drawn that way.
+        # Let's assume standard math: 0 is East. atan2(y, x).
+        # But Sprite angle: 0 is right (East).
+        # MyGame setup: P2 angle=180 (facing Left?).
+        # Let's check atan2 usage. math.atan2(y, x).
+        target_angle = math.degrees(math.atan2(dy, dx)) - 90 # Adjust for Sprite 0=North convention?
+        # Actually, let's debug. Standard Tank sprites usually face UP (North) at angle 0.
+        # So atan2(dy, dx) gives angle from East (0).
+        # We need angle from North (0 is North? No, usually 0 is East in Arcade unless specified).
+        # Let's assume 0 is East (Right). 
+        # Then target_angle = degrees(atan2(dy, dx)).
+        
+        # Correction: arcade.Sprite 0 degrees is usually pointing RIGHT.
+        # If tank image points UP, we need -90.
+        # Let's assume standard behavior: angle is CCW from Right.
+        target_angle = math.degrees(math.atan2(dy, dx)) - 90 # Assuming tank art faces Up.
+        
+        # Calculate difference
+        diff = target_angle - self.angle
+        # Normalize diff to -180 to 180
+        while diff > 180: diff -= 360
+        while diff < -180: diff += 360
+        
+        # Turn towards target
+        if abs(diff) > 5:
+            if diff > 0:
+                self.angle_speed = TANK_TURN_SPEED
+            else:
+                self.angle_speed = -TANK_TURN_SPEED
+        else:
+            self.angle_speed = 0
+            
+        # 2. Movement (Maintain distance)
+        desired_dist = 300
+        if dist > desired_dist:
+            self.speed = TANK_SPEED
+        elif dist < desired_dist - 50:
+            self.speed = -TANK_SPEED
+        else:
+            self.speed = 0
+            
+        # 3. Wall Avoidance (Very basic)
+        # If we hit a wall recently (speed was 0 but we wanted to move?), logic is handled in main.py collision.
+        # Here we just react to recoil?
+        # Let's add simple random strafe if stuck?
+        # For now, just focus on shooting.
+        
+        # 4. Shooting
+        bullets = []
+        if abs(diff) < 20 and dist < 600:
+            # Random chance to fire if aligned
+            if random.random() < 0.05:
+                # Fire!
+                new_bullets = self.fire()
+                if new_bullets:
+                    bullets.extend(new_bullets)
+        
+        return bullets
