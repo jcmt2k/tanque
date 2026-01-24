@@ -10,7 +10,7 @@ class Block(arcade.Sprite):
 
 from shelter import Shelter
 
-def load_map(filename):
+def load_map(filename, offset_x=GAME_LEFT_X):
     """
     Loads a map from a text file.
     Legend:
@@ -48,7 +48,7 @@ def load_map(filename):
         
         line = line.strip()
         for col_idx, char in enumerate(line):
-            x = col_idx * GRID_SIZE + GRID_SIZE / 2
+            x = (col_idx * GRID_SIZE + GRID_SIZE / 2) + offset_x
             # Top-down positioning
             y = SCREEN_HEIGHT - (row_idx * GRID_SIZE) - GRID_SIZE / 2
             

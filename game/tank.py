@@ -35,29 +35,25 @@ class Tank(arcade.Sprite):
         # Power-ups
         self.is_shielded = False
         self.shield_timer = 0
-        self.speed_boost_timer = 0
+        self.rapid_fire_timer = 0
         self.triple_shot_timer = 0
-        self.base_speed = TANK_SPEED # Store constant
-        self.current_max_speed = TANK_SPEED
-
+        self.base_speed = TANK_SPEED 
+        
     def update(self, delta_time: float = 1/60):
         # Rotate
         self.angle -= self.angle_speed
         
         # Calculate velocity vector
-        # Reverting to standard math (Positive).
-        # We will handle "Forward/Backward" mapping in the Input handling (main.py)
-        # to ensure W moves in the visual direction of the cannon.
         self.change_x = math.sin(math.radians(self.angle)) * self.speed
         self.change_y = math.cos(math.radians(self.angle)) * self.speed
         
         super().update()
         
         # Screen wrapping
-        if self.left > SCREEN_WIDTH:
-            self.right = 0
-        elif self.right < 0:
-            self.left = SCREEN_WIDTH
+        if self.left > GAME_RIGHT_X:
+            self.right = GAME_LEFT_X
+        elif self.right < GAME_LEFT_X:
+            self.left = GAME_RIGHT_X
         if self.top > SCREEN_HEIGHT:
             self.bottom = 0
         elif self.bottom < 0:
@@ -81,42 +77,57 @@ class Tank(arcade.Sprite):
             if self.shield_timer <= 0:
                 self.is_shielded = False
         
-        if self.speed_boost_timer > 0:
-            self.speed_boost_timer -= delta_time
-            if self.speed_boost_timer <= 0:
-                self.current_max_speed = self.base_speed
+        if self.rapid_fire_timer > 0:
+            self.rapid_fire_timer -= delta_time
         
         if self.triple_shot_timer > 0:
             self.triple_shot_timer -= delta_time
 
     def apply_powerup(self, p_type):
         """Applies a powerup effect."""
+        config = POWERUP_CONFIG.get(p_type)
+        if not config:
+            return
+
+        duration = config.get("duration", 10.0)
+
         if p_type == POWERUP_TYPE_SHIELD:
             self.is_shielded = True
-            self.shield_timer = POWERUP_DURATION
-        elif p_type == POWERUP_TYPE_SPEED:
-            self.speed_boost_timer = POWERUP_DURATION
-            self.current_max_speed = self.base_speed * 1.5
+            self.shield_timer = duration
+        elif p_type == POWERUP_TYPE_RAPID_FIRE:
+            self.rapid_fire_timer = duration
+            # Refill ammo immediately on pickup? logical for "full bullets"
+            self.ammo = self.max_ammo 
+            self.is_reloading = False
         elif p_type == POWERUP_TYPE_TRIPLE:
-            self.triple_shot_timer = POWERUP_DURATION
+            self.triple_shot_timer = duration
 
     def fire(self):
         """Attempts to fire a bullet. Returns Bullet instance or None."""
-        if self.fire_cooldown == 0 and not self.is_reloading and self.ammo > 0:
-            self.ammo -= 1
-            if self.ammo <= 0:
-                self.is_reloading = True
-                self.reload_timer = RELOAD_TIME
+        # Determine current fire rate and ammo usage
+        current_fire_rate = FIRE_RATE
+        infinite_ammo = False
+        
+        if self.rapid_fire_timer > 0:
+            current_fire_rate = POWERUP_CONFIG[POWERUP_TYPE_RAPID_FIRE]["fire_rate_cooldown"]
+            infinite_ammo = POWERUP_CONFIG[POWERUP_TYPE_RAPID_FIRE]["infinite_ammo"]
+
+        if self.fire_cooldown == 0 and not self.is_reloading and (self.ammo > 0 or infinite_ammo):
+            if not infinite_ammo:
+                self.ammo -= 1
+                if self.ammo <= 0:
+                    self.is_reloading = True
+                    self.reload_timer = RELOAD_TIME
                 
-            # Fire from the "Back" (which appears to be the visual Front)
-            #bullet_angle = self.angle + 180 
             base_angle = self.angle 
             
             bullets_to_spawn = []
             
             angles = [base_angle]
             if self.triple_shot_timer > 0:
-                angles = [base_angle - 15, base_angle, base_angle + 15]
+                # Use spread from config if possible, else default 15
+                spread = POWERUP_CONFIG[POWERUP_TYPE_TRIPLE]["spread_angle"]
+                angles = [base_angle - spread, base_angle, base_angle + spread]
             
             for ang in angles:
                 bullet = Bullet(self.bullet_name, BULLET_SCALE, ang)
@@ -125,50 +136,45 @@ class Tank(arcade.Sprite):
                 bullet.center_y = self.center_y + math.cos(math.radians(ang)) * offset 
                 bullets_to_spawn.append(bullet)
 
-            self.fire_cooldown = FIRE_RATE
+            self.fire_cooldown = current_fire_rate
             return bullets_to_spawn
         return []
-        return None
         
-    def draw_health_bar(self):
-        """Draws a simple health bar above the tank."""
-        if self.hp < self.max_hp:
-            # Draw background (Red)
-            # Using lrbt per modern Arcade requirements (Left, Right, Bottom, Top)
-            arcade.draw_lrbt_rectangle_filled(
-                self.center_x - HEALTH_BAR_WIDTH / 2,
-                self.center_x + HEALTH_BAR_WIDTH / 2,
-                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2, # Bottom
-                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2, # Top
-                arcade.color.RED
-            )
-            
-            # Draw current health (Green)
-            health_width = HEALTH_BAR_WIDTH * (max(0, self.hp) / self.max_hp)
-            # Calculate left position based on centered bar
-            bar_left = self.center_x - HEALTH_BAR_WIDTH / 2
-            
-            arcade.draw_lrbt_rectangle_filled(
-                bar_left,
-                bar_left + health_width,
-                self.center_y + 40 - HEALTH_BAR_HEIGHT / 2, # Bottom
-                self.center_y + 40 + HEALTH_BAR_HEIGHT / 2, # Top
-                arcade.color.GREEN
-            )
-            
+    def draw_indicators(self):
+        """Draws indicators (Shield, Ammo) on/near the tank."""
+        # Shield
         if self.is_shielded:
-             arcade.draw_circle_outline(self.center_x, self.center_y, 30, arcade.color.CYAN, 2)
+             arcade.draw_circle_outline(self.center_x, self.center_y, 30, arcade.color.BLUE, 2)
             
-        # Draw Ammo (Yellow dots below health)
-        start_x = self.center_x - 20
+        # Discrete Ammo (Small dots below tank)
+        start_x = self.center_x - 15
+        
+        display_ammo = self.ammo
+        if self.rapid_fire_timer > 0:
+            display_ammo = self.max_ammo
+            
         for i in range(self.max_ammo):
-            color = arcade.color.YELLOW if i < self.ammo else arcade.color.GRAY
-            arcade.draw_circle_filled(
-                start_x + i * 10,
-                self.center_y + 30,
-                3,
-                color
-            )
+            # Only draw available ammo or empty slots subtly
+            if i < display_ammo:
+                color = arcade.color.YELLOW
+                if self.rapid_fire_timer > 0:
+                     color = arcade.color.GOLD
+                
+                arcade.draw_circle_filled(
+                    start_x + i * 8,
+                    self.center_y - 30, # Below tank
+                    3,
+                    color
+                )
+            else:
+                # Optionally draw empty dots very faintly
+                arcade.draw_circle_filled(
+                    start_x + i * 8,
+                    self.center_y - 30,
+                    2,
+                    (50, 50, 50, 100) # Semi-transparent gray
+                )
+             
         
         # Draw Reloading Text
         if self.is_reloading:

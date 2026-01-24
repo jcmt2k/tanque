@@ -5,9 +5,16 @@ Global constants for the Tank Game.
 import arcade
 
 # Screen settings
-SCREEN_WIDTH = 800
+# Screen settings
+GAME_WIDTH = 800
+SIDEBAR_WIDTH = 150
+SCREEN_WIDTH = GAME_WIDTH + (SIDEBAR_WIDTH * 2) # 1100
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Juego de Tanques v2 - Professional Edition"
+
+# Game Bounds
+GAME_LEFT_X = SIDEBAR_WIDTH
+GAME_RIGHT_X = SIDEBAR_WIDTH + GAME_WIDTH
 
 # Game settings
 GRAVITY = 0
@@ -59,12 +66,42 @@ KEY_RESTART = arcade.key.SPACE
 KEY_EXIT = arcade.key.ESCAPE
 
 # Power-ups
+# Power-ups
 POWERUP_TYPE_SHIELD = 0
-POWERUP_TYPE_SPEED = 1
+POWERUP_TYPE_RAPID_FIRE = 1 # Formerly SPEED
 POWERUP_TYPE_TRIPLE = 2
-POWERUP_DURATION = 10.0 # Seconds
+POWERUP_TYPE_ACID = 3
+
 POWERUP_SPAWN_TIME = 15.0 # Seconds
 POWERUP_SCALE = 0.5
-POWERUP_TYPE_ACID = 3
-ACID_RAIN_DURATION = 10.0
-ACID_DAMAGE = 0.5
+ACID_RAIN_DURATION = 10.0 # Kept for event logic
+ACID_DAMAGE = 0.5 
+
+POWERUP_CONFIG = {
+    POWERUP_TYPE_SHIELD: {
+        "name": "Shield",
+        "color": arcade.color.BLUE,
+        "duration": 10.0,
+        "radius": 30
+    },
+    POWERUP_TYPE_RAPID_FIRE: {
+        "name": "Rapid Fire",
+        "color": arcade.color.YELLOW,
+        "duration": 5.0,
+        "fire_rate_cooldown": 5, # Frames (vs 30 default)
+        "infinite_ammo": True
+    },
+    POWERUP_TYPE_TRIPLE: {
+        "name": "Triple Shot",
+        "color": arcade.color.RED,
+        "duration": 10.0,
+        "spread_angle": 15,
+        "bullet_count": 3
+    },
+    POWERUP_TYPE_ACID: {
+        "name": "Acid Rain",
+        "color": arcade.color.EMERALD,
+        "duration": 10.0,
+        "damage": 0.5
+    }
+}

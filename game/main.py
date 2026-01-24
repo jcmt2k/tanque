@@ -43,10 +43,15 @@ class MyGame(arcade.Window):
         self.score_p1 = 0
         self.score_p2 = 0
         self.current_level = 1
+        self.current_level = 1
         
-        
-        # Polish
+        # Viewport for scaling
+        self.viewport_x = 0
+        self.viewport_y = 0
+        self.viewport_width = SCREEN_WIDTH
+        self.viewport_height = SCREEN_HEIGHT
         self.camera = arcade.camera.Camera2D()
+        self.ui_camera = arcade.camera.Camera2D()
         self.shake_amount = 0
         self.particle_list = arcade.SpriteList()
 
@@ -126,32 +131,25 @@ class MyGame(arcade.Window):
 
         # Safe map loading
         map_file = f"maps/map{self.current_level}.txt"
-        try:
-             # Basic check if file exists (Arcade might error or Terrain load might handle it)
-             pass
-        except:
-             pass
+        
+        # Load Map with Offset
+        self.wall_list, self.shelter_list = load_map(map_file, offset_x=GAME_LEFT_X)
+        
+        # Fallback if map fails loading
+        if not self.wall_list and self.current_level > 1:
+             print(f"Map {self.current_level} not found. Resetting to 1.")
+             self.current_level = 1
+             self.wall_list, self.shelter_list = load_map("maps/map1.txt", offset_x=GAME_LEFT_X)
 
         self.all_sprites = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
         self.powerup_list = arcade.SpriteList()
         self.particle_list = arcade.SpriteList()
         self.acid_list = arcade.SpriteList()
-        self.shelter_list = arcade.SpriteList()
-        
-        self.powerup_spawn_timer = POWERUP_SPAWN_TIME
-        self.acid_rain_active = False
-        self.acid_timer = 0
         
         self.camera.position = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        self.ui_camera.position = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.shake_amount = 0
-        
-        self.wall_list, self.shelter_list = load_map(map_file)
-        # Fallback if map fails loading (e.g. if we go beyond 10 and file doesn't exist, though we have 10)
-        if not self.wall_list and self.current_level > 1:
-             print(f"Map {self.current_level} not found. Resetting to 1.")
-             self.current_level = 1
-             self.wall_list, self.shelter_list = load_map("maps/map1.txt")
 
         self.winner = None
         self.text_winner = None
@@ -169,15 +167,15 @@ class MyGame(arcade.Window):
         if self.sound_bgm:
             self.bgm_player = self.sound_bgm.play(volume=BGM_VOLUME, loop=True)
 
-        # Player 1 (Blue)
+        # Player 1 (Blue) - Left side of arena
         self.player1 = Tank(COLOR_TANK_1, TANK_SCALE)
-        self.player1.center_x = 100
+        self.player1.center_x = GAME_LEFT_X + 100
         self.player1.center_y = 300
         self.all_sprites.append(self.player1)
 
-        # Player 2 (Red)
+        # Player 2 (Red) - Right side of arena
         self.player2 = Tank(COLOR_TANK_2, TANK_SCALE)
-        self.player2.center_x = 700
+        self.player2.center_x = GAME_RIGHT_X - 100
         self.player2.center_y = 300
         self.player2.angle = 180
         self.all_sprites.append(self.player2)
@@ -231,6 +229,8 @@ class MyGame(arcade.Window):
     def draw_menu(self):
         """Draws the main menu."""
         self.clear()
+        self.ui_camera.use()
+        
         self.text_title.draw()
         self.text_instruction.draw()
         
@@ -267,28 +267,64 @@ class MyGame(arcade.Window):
         self.acid_list.draw()
         self.particle_list.draw()
         
-        # Draw Health Bars
-        if self.player1: self.player1.draw_health_bar()
-        if self.player2: self.player2.draw_health_bar()
+        if self.player1: self.player1.draw_indicators()
+        if self.player2: self.player2.draw_indicators()
 
-        # UI elements should be drawn with a static camera if we had a separate UI camera
-        # For now, health bars shake with the world (which is fine/good).
-        # Winner text and Pause overlay should NOT shake ideally, but we only have one camera so far.
-        # Let's reset camera for UI overlays.
+        # Switch to UI Camera for static elements
+        self.ui_camera.use()
+
+        # Draw Sidebars
+        # Left Sidebar (Player 1)
+        arcade.draw_lrbt_rectangle_filled(0, GAME_LEFT_X, 0, SCREEN_HEIGHT, arcade.color.DARK_SLATE_BLUE)
+        arcade.draw_text("JUGADOR 1", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 50, arcade.color.WHITE, 14, anchor_x="center", bold=True)
+        arcade.draw_text(f"Puntos: {self.score_p1}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
         
-        # Reset Viewport for UI (Identity matrix)
-        # Note: If we had a self.ui_camera it would be cleaner, but simple reset works too.
-        # But wait, arcade.Camera.use() sets viewport. 
-        # To draw UI static, we can move camera back to 0,0 temporarily or create a 2nd camera.
-        # Let's create a 2nd camera in __init__? Or just rely on the fact that when paused/gameover we probably aren't shaking much.
-        # Actually screen shake happens during GAME state. Powerups/Health are world space.
-        # Winner Text is Screen Space.
+        # P1 Health (Text + Bar)
+        if self.player1:
+             hp_pct = max(0, self.player1.hp / self.player1.max_hp)
+             arcade.draw_text(f"HP: {int(self.player1.hp)}/{self.player1.max_hp}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
+             # Draw sidebar health bar
+             arcade.draw_lrbt_rectangle_filled(20, SIDEBAR_WIDTH - 20, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.RED)
+             arcade.draw_lrbt_rectangle_filled(20, 20 + (SIDEBAR_WIDTH - 40) * hp_pct, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.GREEN)
+             
+             # P1 Amenities
+             arcade.draw_text(f"Balas: {self.player1.ammo}/{self.player1.max_ammo}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+             
+             # Active Powerup
+             status = "Normal"
+             if self.player1.is_shielded: status = "ESCUDO"
+             elif self.player1.rapid_fire_timer > 0: status = "RAPID FIRE"
+             elif self.player1.triple_shot_timer > 0: status = "TRIPLE"
+             
+             arcade.draw_text(f"Estado:", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
+             arcade.draw_text(f"{status}", SIDEBAR_WIDTH / 2, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
+
+
+        # Right Sidebar (Player 2)
+        arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X, SCREEN_WIDTH, 0, SCREEN_HEIGHT, arcade.color.DARK_RED)
+        center_r = GAME_RIGHT_X + SIDEBAR_WIDTH / 2
+        arcade.draw_text("JUGADOR 2", center_r, SCREEN_HEIGHT - 50, arcade.color.WHITE, 14, anchor_x="center", bold=True)
+        arcade.draw_text(f"Puntos: {self.score_p2}", center_r, SCREEN_HEIGHT - 80, arcade.color.WHITE, 12, anchor_x="center")
         
-        if self.winner and self.text_winner:
-             # Reset camera position for static UI text
-             # self.camera.move_to((0,0)) # This would affect world if we don't swap back. 
-             # Easier to just create a UI camera.
-             pass 
+        # P2 Health
+        if self.player2:
+             hp_pct = max(0, self.player2.hp / self.player2.max_hp)
+             arcade.draw_text(f"HP: {int(self.player2.hp)}/{self.player2.max_hp}", center_r, SCREEN_HEIGHT - 120, arcade.color.WHITE, 12, anchor_x="center")
+             # Draw sidebar health bar
+             arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X + 20, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.RED)
+             arcade.draw_lrbt_rectangle_filled(GAME_RIGHT_X + 20, GAME_RIGHT_X + 20 + (SIDEBAR_WIDTH - 40) * hp_pct, SCREEN_HEIGHT - 140, SCREEN_HEIGHT - 130, arcade.color.GREEN)
+
+             # P2 Amenities
+             arcade.draw_text(f"Balas: {self.player2.ammo}/{self.player2.max_ammo}", center_r, SCREEN_HEIGHT - 170, arcade.color.YELLOW, 12, anchor_x="center")
+
+             # Active Powerup
+             status = "Normal"
+             if self.player2.is_shielded: status = "ESCUDO"
+             elif self.player2.rapid_fire_timer > 0: status = "RAPID FIRE"
+             elif self.player2.triple_shot_timer > 0: status = "TRIPLE"
+             
+             arcade.draw_text(f"Estado:", center_r, SCREEN_HEIGHT - 210, arcade.color.WHITE, 12, anchor_x="center")
+             arcade.draw_text(f"{status}", center_r, SCREEN_HEIGHT - 230, arcade.color.CYAN, 10, anchor_x="center", bold=True)
 
         if self.winner and self.text_winner:
             self.text_winner.draw()
@@ -327,7 +363,7 @@ class MyGame(arcade.Window):
         if self.powerup_spawn_timer <= 0:
             self.powerup_spawn_timer = POWERUP_SPAWN_TIME
             # Attempt to spawn powerup
-            x = random.randint(50, SCREEN_WIDTH - 50)
+            x = random.randint(GAME_LEFT_X + 50, GAME_RIGHT_X - 50)
             y = random.randint(50, SCREEN_HEIGHT - 50)
             
             # Simple check to avoid walls
@@ -359,7 +395,7 @@ class MyGame(arcade.Window):
             else:
                 # Spawn drops (e.g., 2 per frame for heavy rain)
                 if random.random() < 0.3: # Adjust density
-                    drop = AcidDrop(random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
+                    drop = AcidDrop(random.randint(GAME_LEFT_X, GAME_RIGHT_X), SCREEN_HEIGHT)
                     self.acid_list.append(drop)
         
         self.acid_list.update()
@@ -444,6 +480,12 @@ class MyGame(arcade.Window):
         if key == KEY_EXIT:
             self.close()
             return
+        
+        # Toggle Fullscreen
+        if key == arcade.key.F:
+            self.set_fullscreen(not self.fullscreen)
+            # Resize is handled automatically by on_resize
+            return
 
         if self.state == STATE_MENU:
             if key == arcade.key.ENTER:
@@ -517,6 +559,27 @@ class MyGame(arcade.Window):
             self.player2.speed = 0
         elif key in (KEY_P2_LEFT, KEY_P2_RIGHT):
             self.player2.angle_speed = 0
+
+    def on_resize(self, width, height):
+        """Handle window resizing"""
+        super().on_resize(width, height)
+        
+        # Calculate scale to fit the game (1100x600) into the new window
+        scale_x = width / SCREEN_WIDTH
+        scale_y = height / SCREEN_HEIGHT
+        scale = min(scale_x, scale_y)
+        
+        # Re-create cameras to pick up new Window Viewport dimensions
+        # This fixes the issue where the camera keeps clipping to the old 1100x600 area
+        self.camera = arcade.camera.Camera2D()
+        self.ui_camera = arcade.camera.Camera2D()
+        
+        self.camera.zoom = scale
+        self.ui_camera.zoom = scale
+        
+        # Reset positions (Important! Default is 0,0)
+        self.camera.position = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        self.ui_camera.position = (SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
 def main():
     window = MyGame()

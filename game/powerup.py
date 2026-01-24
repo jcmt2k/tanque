@@ -4,7 +4,9 @@ from constants import *
 
 class PowerUp(arcade.Sprite):
     def __init__(self, x, y):
-        self.type = random.choice([POWERUP_TYPE_SHIELD, POWERUP_TYPE_SPEED, POWERUP_TYPE_TRIPLE, POWERUP_TYPE_ACID])
+        self.type = random.choice(list(POWERUP_CONFIG.keys()))
+        
+        config = POWERUP_CONFIG[self.type]
         
         # Determine color/visual based on type
         # Ideally we'd valid pngs, but for now we'll use simple colored circles via Arcade's make_circle_texture if possible,
@@ -17,19 +19,10 @@ class PowerUp(arcade.Sprite):
         self.center_x = x
         self.center_y = y
         
-        if self.type == POWERUP_TYPE_SHIELD:
-            self.color = arcade.color.BLUE
-            self.texture_name = "shield"
-        elif self.type == POWERUP_TYPE_SPEED:
-            self.color = arcade.color.YELLOW
-            self.texture_name = "speed"
-        elif self.type == POWERUP_TYPE_TRIPLE:
-            self.color = arcade.color.RED
-            self.texture_name = "triple"
-        elif self.type == POWERUP_TYPE_ACID:
-            self.color = arcade.color.EMERALD
-            self.texture_name = "acid"
-            
+        self.color = config["color"]
+        # Texture name is less relevant if we just rely on color, but keeping it simple
+        self.texture_name = config["name"].lower().replace(" ", "_")
+
     def draw(self, **kwargs):
         # Custom draw to make it look distinct if sprites are simple
         super().draw(**kwargs)
